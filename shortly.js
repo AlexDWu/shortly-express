@@ -32,17 +32,17 @@ app.use(session({
 
 }));
 
-app.get('/', //util.isLoggedIn,
+app.get('/', util.isLoggedIn,
 function(req, res) {
   res.render('index');
 });
 
-app.get('/create', //util.isLoggedIn,
+app.get('/create', util.isLoggedIn,
 function(req, res) {
   res.render('index');
 });
 
-app.get('/links', //util.isLoggedIn,
+app.get('/links', util.isLoggedIn,
 function(req, res) {
   Links.reset().fetch().then(function(links) {
     res.send(200, links.models);
@@ -95,7 +95,7 @@ app.get('/login', function(req,res){
 app.post('/signup',function(req,res){
   new User(req.body).save()
   .then(function(model){
-    // req.session.username = model.get('username');
+    req.session.username = model.get('username');
     res.redirect('/');
   })
   .catch(function(error){
@@ -111,13 +111,14 @@ app.post('/login', function(req,res){
   })
   .then(function(authorized){
     if(authorized){
-      // req.session.username = model.get('username');
+      req.session.username = req.body.username;
       res.redirect('/');
     } else {
       res.redirect('/login');
     }
   })
   .catch(function(error){
+    console.log('trying to log in: ' + error);
     res.redirect('/login');
   });
 });
