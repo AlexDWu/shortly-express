@@ -32,24 +32,36 @@ app.use(session({
 
 }));
 
-app.get('/', util.isLoggedIn,
+app.get('/', util.checkUser,
 function(req, res) {
   res.render('index');
 });
 
-app.get('/create', util.isLoggedIn,
+app.get('/create', util.checkUser,
 function(req, res) {
   res.render('index');
 });
 
-app.get('/links', util.isLoggedIn,
+app.get('/logout', function(req, res){
+  console.log("GET LOGOUT");
+  // kill session
+  req.session.destroy(function(err){
+    if(err){
+      console.log("can't destroy session: " + err);
+    }
+  });
+  // redirect to login page
+  res.redirect('/login');
+});
+
+app.get('/links', util.checkUser,
 function(req, res) {
   Links.reset().fetch().then(function(links) {
     res.send(200, links.models);
   });
 });
 
-app.post('/links', 
+app.post('/links', util.checkUser,
 function(req, res) {
   var uri = req.body.url;
 
@@ -98,8 +110,9 @@ app.post('/signup',function(req,res){
     req.session.username = model.get('username');
     res.redirect('/');
   })
-  .catch(function(error){
-    throw error;
+  .catch(function(error) {
+    console.log('error signing up:' + error);
+    res.redirect('/signup');
   });
 });
 
