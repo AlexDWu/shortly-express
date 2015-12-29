@@ -2,6 +2,10 @@ var express = require('express');
 var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
+var session = require('express-session');
+var bcrypt = require('bcrypt-nodejs');
+var Promise = require('bluebird');
+var compareAsync = Promise.promisify(bcrypt.compare);
 
 
 var db = require('./app/config');
@@ -21,19 +25,24 @@ app.use(bodyParser.json());
 // Parse forms (signup/login)
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
+app.use(session({
+  secret: 'tamales',
+  resave: false,
+  saveUninitialized: false,
 
+}));
 
-app.get('/', 
+app.get('/', //util.isLoggedIn,
 function(req, res) {
   res.render('index');
 });
 
-app.get('/create', 
+app.get('/create', //util.isLoggedIn,
 function(req, res) {
   res.render('index');
 });
 
-app.get('/links', 
+app.get('/links', //util.isLoggedIn,
 function(req, res) {
   Links.reset().fetch().then(function(links) {
     res.send(200, links.models);
@@ -75,7 +84,43 @@ function(req, res) {
 /************************************************************/
 // Write your authentication routes here
 /************************************************************/
+app.get('/signup', function(req,res){
+  res.render('signup');
+});
 
+app.get('/login', function(req,res){
+  res.render('login');
+});
+
+app.post('/signup',function(req,res){
+  new User(req.body).save()
+  .then(function(model){
+    // req.session.username = model.get('username');
+    res.redirect('/');
+  })
+  .catch(function(error){
+    throw error;
+  });
+});
+
+app.post('/login', function(req,res){
+  new User({'username': req.body.username})
+  .fetch()
+  .then(function(model){
+    return(compareAsync(req.body.password, model.get('password')));
+  })
+  .then(function(authorized){
+    if(authorized){
+      // req.session.username = model.get('username');
+      res.redirect('/');
+    } else {
+      res.redirect('/login');
+    }
+  })
+  .catch(function(error){
+    res.redirect('/login');
+  });
+});
 
 
 /************************************************************/
